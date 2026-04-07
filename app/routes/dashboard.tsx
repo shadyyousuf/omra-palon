@@ -93,7 +93,7 @@ function DashboardPage() {
     fetchData()
   }
 
-  const handleMarkAsPaid = async () => {
+  const handleMarkAsPaid = async (customAmount: number) => {
     if (!drawerProfile) return
 
     // Upsert payment record
@@ -102,7 +102,7 @@ function DashboardPage() {
       .upsert(
         {
           user_id: drawerProfile.id,
-          amount: MONTHLY_AMOUNT,
+          amount: customAmount,
           month: selectedMonth,
           year: selectedYear,
           status: 'paid',
@@ -184,10 +184,22 @@ function DashboardPage() {
 
           {/* Month picker dropdown */}
           {showMonthPicker && (
-            <div
-              className="absolute top-8 left-0 z-30 glass-card p-2 animate-fade-in"
-              style={{ minWidth: '200px' }}
-            >
+            <>
+              {/* Invisible overlay to catch clicks outside the dropdown */}
+              <div 
+                className="fixed inset-0 z-40" 
+                onClick={() => setShowMonthPicker(false)} 
+              />
+              <div
+                className="absolute top-8 left-0 z-50 p-2 animate-fade-in rounded-2xl border overflow-y-auto"
+                style={{ 
+                  minWidth: '220px',
+                  maxHeight: '300px',
+                  background: 'var(--color-surface-900)',
+                  borderColor: 'rgba(148, 163, 184, 0.1)',
+                  boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5)'
+                }}
+              >
               {monthOptions.map((opt) => (
                 <button
                   key={`${opt.month}-${opt.year}`}
@@ -197,15 +209,15 @@ function DashboardPage() {
                     setShowMonthPicker(false)
                     setLoading(true)
                   }}
-                  className="w-full text-left px-3 py-2 rounded-lg text-sm transition-colors"
+                  className="w-full text-left px-4 py-3 rounded-xl text-base font-medium transition-colors mb-1 last:mb-0"
                   style={{
                     color:
                       opt.month === selectedMonth && opt.year === selectedYear
-                        ? 'var(--color-primary-400)'
+                        ? 'white'
                         : 'var(--color-surface-300)',
                     background:
                       opt.month === selectedMonth && opt.year === selectedYear
-                        ? 'rgba(99,102,241,0.1)'
+                        ? 'var(--color-primary-500)'
                         : 'transparent',
                   }}
                 >
@@ -213,7 +225,8 @@ function DashboardPage() {
                 </button>
               ))}
             </div>
-          )}
+          </>
+        )}
 
           <MonthlyProgress
             paidCount={paidCount}

@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 @import "tailwindcss";
 
 /* ==========================================
@@ -36,9 +37,6 @@
 
   --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
 }
-
-/* Google Font */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
 /* ==========================================
    Base Styles
@@ -153,6 +151,15 @@ body {
   }
 }
 
+@keyframes drawerSlideUp {
+  from {
+    transform: translate(-50%, 100%);
+  }
+  to {
+    transform: translate(-50%, 0);
+  }
+}
+
 @keyframes slideDown {
   from {
     transform: translateY(0);
@@ -258,12 +265,11 @@ body {
   width: 100%;
   max-width: 448px;
   background: var(--color-surface-900);
-  border-top-left-radius: 24px;
-  border-top-right-radius: 24px;
+  border-radius: 24px 24px 0 0;
   border: 1px solid rgba(148, 163, 184, 0.1);
   border-bottom: none;
   z-index: 51;
-  animation: slideUp 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+  animation: drawerSlideUp 0.35s cubic-bezier(0.32, 0.72, 0, 1);
   padding: 24px;
   padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
 }

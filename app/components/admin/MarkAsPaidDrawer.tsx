@@ -7,17 +7,23 @@ interface MarkAsPaidDrawerProps {
   profile: Profile
   month: number
   year: number
-  onConfirm: () => Promise<void>
+  onConfirm: (amount: number) => Promise<void>
   onClose: () => void
 }
 
 export function MarkAsPaidDrawer({ profile, month, year, onConfirm, onClose }: MarkAsPaidDrawerProps) {
   const [loading, setLoading] = useState(false)
+  const [amount, setAmount] = useState<string>(MONTHLY_AMOUNT.toString())
+  
+  const numericAmount = Number(amount)
+  const isInvalidAmount = !amount || isNaN(numericAmount) || numericAmount < MONTHLY_AMOUNT
 
   const handleConfirm = async () => {
+    if (isInvalidAmount) return
+    
     setLoading(true)
     try {
-      await onConfirm()
+      await onConfirm(Number(amount))
       onClose()
     } catch {
       setLoading(false)
@@ -66,31 +72,54 @@ export function MarkAsPaidDrawer({ profile, month, year, onConfirm, onClose }: M
         </div>
 
         {/* Amount */}
-        <div className="text-center mb-6">
-          <p className="text-xs uppercase tracking-wider mb-1" style={{ color: 'var(--color-surface-500)' }}>
-            Amount
-          </p>
-          <p className="text-4xl font-bold" style={{ color: 'var(--color-surface-50)' }}>
-            ৳{MONTHLY_AMOUNT.toLocaleString()}
-          </p>
-          <p className="text-xs mt-1" style={{ color: 'var(--color-surface-500)' }}>
-            BDT
-          </p>
+        <div className="mb-6">
+          <label htmlFor="custom-amount" className="text-xs uppercase tracking-wider mb-2 block text-center" style={{ color: 'var(--color-surface-500)' }}>
+            Amount (BDT)
+          </label>
+          <div className="relative max-w-[240px] mx-auto">
+            <span 
+              className="absolute left-4 top-1/2 -translate-y-1/2 text-xl font-bold" 
+              style={{ color: 'var(--color-surface-400)' }}
+            >
+              ৳
+            </span>
+            <input
+              id="custom-amount"
+              type="number"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              className="input-field text-center font-black"
+              min={MONTHLY_AMOUNT}
+              style={{ 
+                color: isInvalidAmount && amount !== '' ? 'var(--color-danger)' : 'var(--color-surface-50)', 
+                fontSize: '28px',
+                paddingTop: '12px',
+                paddingBottom: '12px',
+                borderColor: isInvalidAmount && amount !== '' ? 'var(--color-danger)' : undefined
+              }}
+            />
+          </div>
+          {isInvalidAmount && amount !== '' && (
+            <p className="text-center text-xs mt-2 animate-fade-in" style={{ color: 'var(--color-danger)' }}>
+              Minimum amount is ৳{MONTHLY_AMOUNT.toLocaleString()} BDT
+            </p>
+          )}
         </div>
 
         {/* Actions */}
         <div className="flex flex-col gap-3">
           <button
             onClick={handleConfirm}
-            disabled={loading}
+            disabled={loading || isInvalidAmount}
             className="btn-primary"
+            style={{ opacity: loading || isInvalidAmount ? 0.5 : 1 }}
           >
             {loading ? (
               <Loader2 size={18} className="animate-spin" />
             ) : (
               <Check size={18} />
             )}
-            {loading ? 'Confirming...' : `Confirm ৳${MONTHLY_AMOUNT.toLocaleString()} BDT`}
+            {loading ? 'Confirming...' : `Confirm ৳${amount || '0'}`}
           </button>
           <button onClick={onClose} className="btn-ghost">
             Cancel
