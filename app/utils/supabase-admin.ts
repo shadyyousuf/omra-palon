@@ -1,13 +1,18 @@
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL
+// Use import.meta.env for the URL since it's already prefixed with VITE_
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
 if (!supabaseUrl || !supabaseServiceKey) {
   if (typeof window === 'undefined') {
+    const missing = []
+    if (!supabaseUrl) missing.push('SUPABASE_URL')
+    if (!supabaseServiceKey) missing.push('SUPABASE_SERVICE_ROLE_KEY')
+    
     console.warn(
-      '⚠️ Supabase Admin credentials not found. User deletion will fail. ' +
-      'Please set SUPABASE_SERVICE_ROLE_KEY in your environment.'
+      `⚠️ Supabase Admin credentials missing: ${missing.join(', ')}. ` +
+      'Admin actions (like user deletion) will fail.'
     )
   }
 }
