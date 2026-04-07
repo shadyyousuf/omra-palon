@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { Settings2, LogOut, User, Loader2, RefreshCw, Shield, Info } from 'lucide-react'
+import { Settings2, LogOut, User, Loader2, RefreshCw, Shield, Info, Trash2, UserX } from 'lucide-react'
 import { MobileLayout } from '../components/layout/MobileLayout'
 import { BottomNav } from '../components/layout/BottomNav'
+import { DeleteMemberDrawer } from '../components/admin/DeleteMemberDrawer'
 import { useAuth } from '../components/auth/AuthProvider'
 import { signOut, updateProfile } from '../utils/auth'
+import { deleteMember } from '../utils/member-actions'
 import { supabase, getAvatarColor, getInitials } from '../utils/supabase'
 import type { Profile } from '../utils/supabase'
 
@@ -24,6 +26,7 @@ function SettingsPage() {
   const [allProfiles, setAllProfiles] = useState<Profile[]>([])
   const [loadingProfiles, setLoadingProfiles] = useState(false)
   const [adminActionLoading, setAdminActionLoading] = useState<string | null>(null)
+  const [deletingProfile, setDeletingProfile] = useState<Profile | null>(null)
 
   const isAdmin = profile?.role === 'admin'
 
@@ -62,6 +65,18 @@ function SettingsPage() {
       console.error('Admin action failed:', err)
     } finally {
       setAdminActionLoading(null)
+    }
+  }
+
+  const handleMemberDeleted = async () => {
+    if (!deletingProfile) return
+    try {
+      await (deleteMember as any)({ data: deletingProfile.id })
+      await fetchAllProfiles()
+      setDeletingProfile(null)
+    } catch (err: any) {
+      console.error('Failed to delete member:', err)
+      throw err // Rethrow for the drawer to handle
     }
   }
 
@@ -237,14 +252,25 @@ function SettingsPage() {
                               </div>
                               <span className="text-sm font-medium" style={{ color: 'var(--color-surface-100)' }}>{p.full_name}</span>
                             </div>
-                            <button
-                              onClick={() => handleAdminAction(p.id, { is_approved: true })}
-                              disabled={!!adminActionLoading}
-                              className="px-3 py-1 rounded-lg text-[11px] font-bold uppercase tracking-wider transition-all"
-                              style={{ background: 'var(--color-success)', color: 'white' }}
-                            >
-                              {adminActionLoading === p.id ? '...' : 'Approve'}
-                            </button>
+                            <div className="flex items-center gap-2">
+                              {p.id !== user?.id && (
+                                <button
+                                  onClick={() => setDeletingProfile(p)}
+                                  className="w-8 h-8 rounded-lg flex items-center justify-center transition-all bg-red-500/10 text-red-500 border border-red-500/10 active:scale-95"
+                                  title="Reject/Delete User"
+                                >
+                                  <UserX size={14} />
+                                </button>
+                              )}
+                              <button
+                                onClick={() => handleAdminAction(p.id, { is_approved: true })}
+                                disabled={!!adminActionLoading}
+                                className="px-3 py-1 rounded-lg text-[11px] font-bold uppercase tracking-wider transition-all"
+                                style={{ background: 'var(--color-success)', color: 'white' }}
+                              >
+                                {adminActionLoading === p.id ? '...' : 'Approve'}
+                              </button>
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -270,18 +296,27 @@ function SettingsPage() {
                           </div>
                           
                           {p.id !== user?.id && (
-                            <button
-                              onClick={() => handleAdminAction(p.id, { role: p.role === 'admin' ? 'member' : 'admin' })}
-                              disabled={!!adminActionLoading}
-                              className="px-3 py-1 rounded-lg text-[11px] font-bold uppercase tracking-wider border transition-all"
-                              style={{ 
-                                borderColor: p.role === 'admin' ? 'rgba(239,68,68,0.2)' : 'rgba(99,102,241,0.2)',
-                                color: p.role === 'admin' ? 'var(--color-danger)' : 'var(--color-primary-400)',
-                                background: p.role === 'admin' ? 'rgba(239,68,68,0.05)' : 'rgba(99,102,241,0.05)'
-                              }}
-                            >
-                              {adminActionLoading === p.id ? '...' : p.role === 'admin' ? 'Demote' : 'Promote'}
-                            </button>
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => setDeletingProfile(p)}
+                                className="w-8 h-8 rounded-lg flex items-center justify-center transition-all bg-red-500/10 text-red-500 border border-red-500/10 active:scale-95"
+                                title="Delete Member"
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                              <button
+                                onClick={() => handleAdminAction(p.id, { role: p.role === 'admin' ? 'member' : 'admin' })}
+                                disabled={!!adminActionLoading}
+                                className="px-3 py-1 rounded-lg text-[11px] font-bold uppercase tracking-wider border transition-all"
+                                style={{ 
+                                  borderColor: p.role === 'admin' ? 'rgba(239,68,68,0.2)' : 'rgba(99,102,241,0.2)',
+                                  color: p.role === 'admin' ? 'var(--color-danger)' : 'var(--color-primary-400)',
+                                  background: p.role === 'admin' ? 'rgba(239,68,68,0.05)' : 'rgba(99,102,241,0.05)'
+                                }}
+                              >
+                                {adminActionLoading === p.id ? '...' : p.role === 'admin' ? 'Demote' : 'Promote'}
+                              </button>
+                            </div>
                           )}
                         </div>
                       ))}
@@ -352,6 +387,15 @@ function SettingsPage() {
       </div>
 
       <BottomNav />
+
+      {/* Delete Member Confirmation */}
+      {deletingProfile && (
+        <DeleteMemberDrawer
+          profile={deletingProfile}
+          onConfirm={handleMemberDeleted}
+          onClose={() => setDeletingProfile(null)}
+        />
+      )}
     </MobileLayout>
   )
 }
