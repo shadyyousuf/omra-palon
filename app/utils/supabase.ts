@@ -22,6 +22,7 @@ export interface Profile {
   id: string
   full_name: string
   role: 'admin' | 'member'
+  is_approved: boolean
   avatar_url: string | null
   created_at: string
 }

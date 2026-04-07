@@ -1,11 +1,12 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { Settings2, LogOut, User, Loader2, RefreshCw, Shield, Info } from 'lucide-react'
 import { MobileLayout } from '../components/layout/MobileLayout'
 import { BottomNav } from '../components/layout/BottomNav'
 import { useAuth } from '../components/auth/AuthProvider'
 import { signOut, updateProfile } from '../utils/auth'
-import { getAvatarColor, getInitials } from '../utils/supabase'
+import { supabase, getAvatarColor, getInitials } from '../utils/supabase'
+import type { Profile } from '../utils/supabase'
 
 export const Route = createFileRoute('/settings')({
   component: SettingsPage,
@@ -18,6 +19,51 @@ function SettingsPage() {
   const [fullName, setFullName] = useState(profile?.full_name ?? '')
   const [saving, setSaving] = useState(false)
   const [signingOut, setSigningOut] = useState(false)
+
+  // Admin management state
+  const [allProfiles, setAllProfiles] = useState<Profile[]>([])
+  const [loadingProfiles, setLoadingProfiles] = useState(false)
+  const [adminActionLoading, setAdminActionLoading] = useState<string | null>(null)
+
+  const isAdmin = profile?.role === 'admin'
+
+  const fetchAllProfiles = async () => {
+    if (!isAdmin) return
+    setLoadingProfiles(true)
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .order('created_at', { ascending: false })
+      if (error) throw error
+      setAllProfiles(data as Profile[])
+    } catch (err) {
+      console.error('Error fetching all profiles:', err)
+    } finally {
+      setLoadingProfiles(false)
+    }
+  }
+
+  useEffect(() => {
+    if (isAdmin) {
+      fetchAllProfiles()
+    }
+  }, [isAdmin])
+
+  const handleAdminAction = async (targetId: string, updates: Partial<Profile>) => {
+    setAdminActionLoading(targetId)
+    try {
+      await updateProfile(targetId, updates)
+      await fetchAllProfiles()
+      if (targetId === user?.id) {
+        await refreshProfile()
+      }
+    } catch (err) {
+      console.error('Admin action failed:', err)
+    } finally {
+      setAdminActionLoading(null)
+    }
+  }
 
   const handleSaveName = async () => {
     if (!user || !fullName.trim()) return
@@ -46,7 +92,7 @@ function SettingsPage() {
 
   if (authLoading) {
     return (
-      <MobileLayout>
+      <MobileLayout isSettingsPage>
         <div className="flex items-center justify-center min-h-dvh">
           <RefreshCw size={24} className="animate-spin" style={{ color: 'var(--color-primary-400)' }} />
         </div>
@@ -60,7 +106,7 @@ function SettingsPage() {
   }
 
   return (
-    <MobileLayout>
+    <MobileLayout isSettingsPage>
       <div className="pb-24 pt-4">
         {/* Header */}
         <div className="flex items-center gap-3 mb-6 animate-fade-in">
@@ -140,6 +186,101 @@ function SettingsPage() {
             </button>
           )}
         </div>
+
+        {/* Admin Panel */}
+        {isAdmin && (
+          <div className="glass-card overflow-hidden mb-4 animate-fade-in-up" style={{ animationDelay: '0.05s' }}>
+            <div className="px-4 py-3 border-b flex items-center justify-between" style={{ borderColor: 'rgba(148,163,184,0.08)' }}>
+              <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--color-primary-400)' }}>
+                Admin Management
+              </span>
+              <button 
+                onClick={fetchAllProfiles} 
+                disabled={loadingProfiles}
+                className="p-1 rounded-lg hover:bg-surface-800 transition-colors"
+                title="Refresh users"
+              >
+                <RefreshCw size={14} className={loadingProfiles ? 'animate-spin' : ''} style={{ color: 'var(--color-surface-400)' }} />
+              </button>
+            </div>
+
+            <div className="divide-y" style={{ borderColor: 'rgba(148,163,184,0.06)' }}>
+              {loadingProfiles && allProfiles.length === 0 ? (
+                <div className="p-8 text-center">
+                  <Loader2 size={24} className="animate-spin mx-auto opacity-20" />
+                </div>
+              ) : (
+                <>
+                  {/* Approval Section */}
+                  {allProfiles.filter(p => !p.is_approved).length > 0 && (
+                    <div className="p-4" style={{ background: 'rgba(245,158,11,0.05)' }}>
+                      <p className="text-[10px] font-bold uppercase tracking-widest mb-3 opacity-50" style={{ color: 'var(--color-warning)' }}>
+                        Pending Approval
+                      </p>
+                      <div className="space-y-3">
+                        {allProfiles.filter(p => !p.is_approved).map(p => (
+                          <div key={p.id} className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <div className="avatar avatar-sm" style={{ background: getAvatarColor(p.full_name) }}>
+                                {getInitials(p.full_name)}
+                              </div>
+                              <span className="text-sm font-medium" style={{ color: 'var(--color-surface-100)' }}>{p.full_name}</span>
+                            </div>
+                            <button
+                              onClick={() => handleAdminAction(p.id, { is_approved: true })}
+                              disabled={!!adminActionLoading}
+                              className="px-3 py-1 rounded-lg text-[11px] font-bold uppercase tracking-wider transition-all"
+                              style={{ background: 'var(--color-success)', color: 'white' }}
+                            >
+                              {adminActionLoading === p.id ? '...' : 'Approve'}
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Role Section */}
+                  <div className="p-4">
+                    <p className="text-[10px] font-bold uppercase tracking-widest mb-3 opacity-50" style={{ color: 'var(--color-surface-400)' }}>
+                      Manage Members
+                    </p>
+                    <div className="space-y-3">
+                      {allProfiles.filter(p => p.is_approved).map(p => (
+                        <div key={p.id} className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <div className="avatar avatar-sm" style={{ background: getAvatarColor(p.full_name) }}>
+                              {getInitials(p.full_name)}
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="text-sm font-medium" style={{ color: 'var(--color-surface-100)' }}>{p.full_name}</span>
+                              <span className="text-[10px] opacity-40">{p.id === user?.id ? 'You' : p.role}</span>
+                            </div>
+                          </div>
+                          
+                          {p.id !== user?.id && (
+                            <button
+                              onClick={() => handleAdminAction(p.id, { role: p.role === 'admin' ? 'member' : 'admin' })}
+                              disabled={!!adminActionLoading}
+                              className="px-3 py-1 rounded-lg text-[11px] font-bold uppercase tracking-wider border transition-all"
+                              style={{ 
+                                borderColor: p.role === 'admin' ? 'rgba(239,68,68,0.2)' : 'rgba(99,102,241,0.2)',
+                                color: p.role === 'admin' ? 'var(--color-danger)' : 'var(--color-primary-400)',
+                                background: p.role === 'admin' ? 'rgba(239,68,68,0.05)' : 'rgba(99,102,241,0.05)'
+                              }}
+                            >
+                              {adminActionLoading === p.id ? '...' : p.role === 'admin' ? 'Demote' : 'Promote'}
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Account Info */}
         <div className="glass-card overflow-hidden mb-4 animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
