@@ -100,9 +100,20 @@ function SettingsPage() {
     )
   }
 
-  if (!user || !profile) {
+  if (!user) {
     navigate({ to: '/login' })
     return null
+  }
+
+  if (!profile) {
+    return (
+      <MobileLayout isSettingsPage>
+        <div className="flex flex-col items-center justify-center min-h-dvh text-center px-6">
+          <RefreshCw size={24} className="animate-spin mb-4" style={{ color: 'var(--color-primary-400)' }} />
+          <p className="text-sm" style={{ color: 'var(--color-surface-400)' }}>Syncing profile...</p>
+        </div>
+      </MobileLayout>
+    )
   }
 
   return (

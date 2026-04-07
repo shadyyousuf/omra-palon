@@ -12,8 +12,8 @@ interface MobileLayoutProps {
 export function MobileLayout({ children, className = '', noPadding = false, isSettingsPage = false }: MobileLayoutProps) {
   const { user, profile, loading } = useAuth()
   
-  const isApproved = profile?.is_approved ?? false
-  const isPending = user && !loading && !isApproved && !isSettingsPage
+  const isApproved = profile?.is_approved === true
+  const isPending = user && !loading && !isApproved && !isSettingsPage && !!profile
 
   return (
     <div className="gradient-bg min-h-dvh">

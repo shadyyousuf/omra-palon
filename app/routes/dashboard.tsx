@@ -173,14 +173,16 @@ function DashboardPage() {
 
         {/* Month Selector + Progress */}
         <div className="mb-4 relative">
-          <button
-            onClick={() => setShowMonthPicker(!showMonthPicker)}
-            className="flex items-center gap-1.5 text-sm font-medium mb-3 transition-colors"
-            style={{ color: 'var(--color-primary-400)' }}
-          >
-            {MONTH_NAMES[selectedMonth - 1]} {selectedYear}
-            <ChevronDown size={16} />
-          </button>
+          <div className="flex justify-end">
+            <button
+              onClick={() => setShowMonthPicker(!showMonthPicker)}
+              className="flex items-center gap-1.5 text-sm font-medium mb-3 transition-colors"
+              style={{ color: 'var(--color-primary-400)' }}
+            >
+              {MONTH_NAMES[selectedMonth - 1]} {selectedYear}
+              <ChevronDown size={16} />
+            </button>
+          </div>
 
           {/* Month picker dropdown */}
           {showMonthPicker && (
@@ -191,7 +193,7 @@ function DashboardPage() {
                 onClick={() => setShowMonthPicker(false)} 
               />
               <div
-                className="absolute top-8 left-0 z-50 p-2 animate-fade-in rounded-2xl border overflow-y-auto"
+                className="absolute top-8 right-0 z-50 p-2 animate-fade-in rounded-2xl border overflow-y-auto"
                 style={{ 
                   minWidth: '220px',
                   maxHeight: '300px',

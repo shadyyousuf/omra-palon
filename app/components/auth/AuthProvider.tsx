@@ -38,37 +38,56 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session)
-      setUser(session?.user ?? null)
-      if (session?.user) {
-        getUserProfile(session.user.id).then(setProfile)
+    let mounted = true
+
+    async function initAuth() {
+      try {
+        const { data: { session: initialSession } } = await supabase.auth.getSession()
+        if (!mounted) return
+
+        setSession(initialSession)
+        setUser(initialSession?.user ?? null)
+        
+        if (initialSession?.user) {
+          const p = await getUserProfile(initialSession.user.id)
+          if (mounted) setProfile(p)
+        }
+      } catch (err) {
+        console.error('Auth initialization failed:', err)
+      } finally {
+        if (mounted) setLoading(false)
       }
-      setLoading(false)
-    })
+    }
+
+    initAuth()
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
+      async (event, session) => {
+        // If we are already initialized and the session hasn't changed, ignore redundant events
         setSession(session)
         setUser(session?.user ?? null)
+        
         if (session?.user) {
           const p = await getUserProfile(session.user.id)
-          setProfile(p)
+          if (mounted) setProfile(p)
         } else {
-          setProfile(null)
+          if (mounted) setProfile(null)
         }
-        setLoading(false)
+        
+        if (mounted) setLoading(false)
       }
     )
 
-    return () => subscription.unsubscribe()
+    return () => {
+      mounted = false
+      subscription.unsubscribe()
+    }
   }, [])
 
   return (
-    <AuthContext value={{ session, user, profile, loading, refreshProfile }}>
+    <AuthContext.Provider value={{ session, user, profile, loading, refreshProfile }}>
       {children}
-    </AuthContext>
+    </AuthContext.Provider>
   )
 }
