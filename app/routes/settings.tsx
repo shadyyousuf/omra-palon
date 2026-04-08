@@ -53,6 +53,12 @@ function SettingsPage() {
     }
   }, [isAdmin])
 
+  useEffect(() => {
+    if (!authLoading && !user) {
+      navigate({ to: '/login' })
+    }
+  }, [authLoading, user, navigate])
+
   const handleAdminAction = async (targetId: string, updates: Partial<Profile>) => {
     setAdminActionLoading(targetId)
     try {
@@ -116,7 +122,6 @@ function SettingsPage() {
   }
 
   if (!user) {
-    navigate({ to: '/login' })
     return null
   }
 

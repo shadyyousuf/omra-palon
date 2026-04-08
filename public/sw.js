@@ -24,8 +24,8 @@ self.addEventListener('activate', (event) => {
 })
 
 self.addEventListener('fetch', (event) => {
-  // Always bypass for non-GET requests
-  if (event.request.method !== 'GET') {
+  // Always bypass for non-GET requests or unsupported schemes (like chrome-extension://)
+  if (event.request.method !== 'GET' || !event.request.url.startsWith('http')) {
     return
   }
 

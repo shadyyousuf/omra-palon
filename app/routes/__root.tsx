@@ -15,6 +15,7 @@ export const Route = createRootRoute({
       { name: 'description', content: 'Omra Palon — Track monthly contributions with your friends' },
       { name: 'theme-color', content: '#020617' },
       { name: 'apple-mobile-web-app-capable', content: 'yes' },
+      { name: 'mobile-web-app-capable', content: 'yes' },
       { name: 'apple-mobile-web-app-status-bar-style', content: 'black-translucent' },
     ],
     links: [
@@ -44,7 +45,7 @@ function RootComponent() {
         <HeadContent />
         <title>Omra Palon</title>
       </head>
-      <body>
+      <body suppressHydrationWarning>
         <AuthProvider>
           <Outlet />
         </AuthProvider>
