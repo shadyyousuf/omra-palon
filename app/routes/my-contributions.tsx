@@ -64,7 +64,8 @@ function MyContributionsPage() {
 
   return (
     <MobileLayout>
-      <div className="pb-24 pt-4">
+      <div className="h-[calc(100dvh-5rem)] flex flex-col pt-4 overflow-hidden">
+        <div className="flex-1 overflow-y-auto px-4 pb-20 custom-scrollbar animate-fade-in">
         {/* Header */}
         <div className="flex items-center gap-3 mb-6 animate-fade-in">
           <div
@@ -124,6 +125,7 @@ function MyContributionsPage() {
             Payment Timeline
           </h2>
           <Timeline payments={payments} isLoading={loading} />
+        </div>
         </div>
       </div>
 

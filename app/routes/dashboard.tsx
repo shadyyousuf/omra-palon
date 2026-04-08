@@ -33,6 +33,42 @@ function DashboardPage() {
   const [totalFund, setTotalFund] = useState(0)
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
+  const [touchStart, setTouchStart] = useState<number | null>(null)
+  const [touchEnd, setTouchEnd] = useState<number | null>(null)
+
+  // Minimum swipe distance in pixels
+  const minSwipeDistance = 50
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchEnd(null)
+    setTouchStart(e.targetTouches[0].clientX)
+  }
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX)
+  }
+
+  const handleTouchEnd = () => {
+    if (!touchStart || !touchEnd) return
+    
+    const distance = touchStart - touchEnd
+    const isLeftSwipe = distance > minSwipeDistance
+    const isRightSwipe = distance < -minSwipeDistance
+    
+    if (isLeftSwipe) {
+      // Next month
+      const nextDate = new Date(selectedYear, selectedMonth, 1)
+      setSelectedMonth(nextDate.getMonth() + 1)
+      setSelectedYear(nextDate.getFullYear())
+      setLoading(true)
+    } else if (isRightSwipe) {
+      // Previous month
+      const prevDate = new Date(selectedYear, selectedMonth - 2, 1)
+      setSelectedMonth(prevDate.getMonth() + 1)
+      setSelectedYear(prevDate.getFullYear())
+      setLoading(true)
+    }
+  }
 
   // Admin drawer
   const [drawerProfile, setDrawerProfile] = useState<Profile | null>(null)
@@ -137,7 +173,14 @@ function DashboardPage() {
 
   return (
     <MobileLayout>
-      <div className="pb-24 pt-4">
+      <div 
+        className="h-[calc(100dvh-5rem)] flex flex-col pt-4 overflow-hidden"
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      >
+        {/* Header - Fixed portion */}
+        <div className="flex-none px-4">
         {/* Header */}
         <div className="flex items-center justify-between mb-6 animate-fade-in">
           <div>
@@ -161,9 +204,12 @@ function DashboardPage() {
             />
           </button>
         </div>
+        </div>
 
-        {/* Total Fund Card */}
-        <div className="mb-4">
+        {/* Scrollable area for fixed content + list */}
+        <div className="flex-1 overflow-y-auto px-4 pb-20 custom-scrollbar">
+          {/* Total Fund Card */}
+          <div className="mb-4">
           <TotalFundCard
             totalPaid={totalFund}
             totalMembers={members.length}
@@ -246,6 +292,7 @@ function DashboardPage() {
           onMarkAsPaid={(p) => setDrawerProfile(p)}
           isLoading={loading}
         />
+        </div>
       </div>
 
       {/* Bottom Nav */}
